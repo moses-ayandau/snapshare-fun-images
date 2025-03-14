@@ -1,5 +1,5 @@
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:17-jre
 LABEL maintainer="moses@gmail.com"
 
 WORKDIR /app
