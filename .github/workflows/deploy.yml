@@ -17,7 +17,7 @@ env:
 
 jobs:
   build-and-deploy:
-    name: Build, Push to ECR and Deploy
+    name: Build, Push to ECR, and Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -51,13 +51,10 @@ jobs:
 
       - name: Download current task definition
         run: |
-          aws ecs describe-task-definition --task-definition snapshare-task --query taskDefinition > task-definition.json
-      - name: Debug task definition
-        run: |
-          cat task-definition.json
-    
+          aws ecs describe-task-definition --task-definition snapshare-task \
+          --query taskDefinition > task-definition.json
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
+      - name: Fill in the new image ID in the ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -65,15 +62,19 @@ jobs:
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ env.IMAGE_URI }}
 
+      - name: Debug updated task definition
+        run: cat ${{ steps.task-def.outputs.task-definition }}
+
       - name: Create AppSpec file for CodeDeploy
         run: |
           cat > appspec.yaml << EOL
+          ---
           version: 0.0
           Resources:
             - TargetService:
                 Type: AWS::ECS::Service
                 Properties:
-                  TaskDefinition: "${{ steps.task-def.outputs.task-definition }}"  # ✅ Use Task Definition ARN
+                  TaskDefinition: "${{ steps.task-def.outputs.task-definition }}"
                   LoadBalancerInfo:
                     ContainerName: "${{ env.CONTAINER_NAME }}"
                     ContainerPort: 80
@@ -82,8 +83,6 @@ jobs:
             - BeforeAllowTraffic: "LambdaFunctionToValidateBeforeTrafficShift"
             - AfterAllowTraffic: "LambdaFunctionToValidateAfterTrafficShift"
           EOL
-      
-      
 
       - name: Validate AppSpec file
         run: |
@@ -97,7 +96,7 @@ jobs:
       - name: Deploy with CodeDeploy
         id: deploy
         run: |
-          set -e  # Enable exit on failure
+          set -e
           DEPLOYMENT_ID=$(aws deploy create-deployment \
             --application-name ${{ env.APPLICATION_NAME }} \
             --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
@@ -160,5 +159,4 @@ jobs:
               ContainerPort=80 \
               EcsClusterName=${{ env.ECS_CLUSTER }} \
               ApplicationName=${{ env.APPLICATION_NAME }} \
-              DeploymentGroupName=${{ env.DEPLOYMENT_GROUP }} \
-              # Remove VPC-related parameters since they're managed separately
+              DeploymentGroupName=${{ env.DEPLOYMENT_GROUP }}
