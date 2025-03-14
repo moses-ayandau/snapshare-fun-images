@@ -98,6 +98,13 @@ jobs:
         id: deploy
         run: |
           set -e
+          # Check if the application exists first
+          if ! aws deploy get-application --application-name ${{ env.APPLICATION_NAME }} &>/dev/null; then
+            echo "CodeDeploy application ${{ env.APPLICATION_NAME }} does not exist."
+            echo "Please create the application and deployment group before running this workflow."
+            exit 1
+          fi
+
           DEPLOYMENT_ID=$(aws deploy create-deployment \
             --application-name ${{ env.APPLICATION_NAME }} \
             --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
