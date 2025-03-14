@@ -69,7 +69,7 @@ jobs:
             - TargetService:
                 Type: AWS::ECS::Service
                 Properties:
-                  TaskDefinition: "${{ steps.task-def.outputs.task-definition }}"
+                  TaskDefinition: "${{ steps.task-def.outputs.task-definition }}"  
                   LoadBalancerInfo:
                     ContainerName: "${{ env.CONTAINER_NAME }}"
                     ContainerPort: 80
@@ -78,6 +78,7 @@ jobs:
             - BeforeAllowTraffic: "LambdaFunctionToValidateBeforeTrafficShift"
             - AfterAllowTraffic: "LambdaFunctionToValidateAfterTrafficShift"
           EOL
+      
 
       - name: Validate AppSpec file
         run: |
