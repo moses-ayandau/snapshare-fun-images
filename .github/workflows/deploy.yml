@@ -76,7 +76,6 @@ jobs:
             - AfterAllowTraffic: "LambdaFunctionToValidateAfterTrafficShift"
           EOL
 
-      # ✅ New Step: Validate AppSpec file before deployment
       - name: Validate AppSpec file
         run: |
           cat appspec.yaml
