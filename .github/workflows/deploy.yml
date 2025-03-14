@@ -52,6 +52,10 @@ jobs:
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition --task-definition snapshare-task --query taskDefinition > task-definition.json
+      - name: Debug task definition
+        run: |
+          cat task-definition.json
+    
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
@@ -69,7 +73,7 @@ jobs:
             - TargetService:
                 Type: AWS::ECS::Service
                 Properties:
-                  TaskDefinition: "${{ steps.task-def.outputs.task-definition }}"  
+                  TaskDefinition: "${{ steps.task-def.outputs.task-definition }}"  # ✅ Use Task Definition ARN
                   LoadBalancerInfo:
                     ContainerName: "${{ env.CONTAINER_NAME }}"
                     ContainerPort: 80
@@ -78,6 +82,7 @@ jobs:
             - BeforeAllowTraffic: "LambdaFunctionToValidateBeforeTrafficShift"
             - AfterAllowTraffic: "LambdaFunctionToValidateAfterTrafficShift"
           EOL
+      
       
 
       - name: Validate AppSpec file
