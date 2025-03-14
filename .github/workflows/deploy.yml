@@ -35,6 +35,9 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Build application
+        run: mvn clean package -DskipTests
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
