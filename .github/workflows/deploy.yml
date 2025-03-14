@@ -11,7 +11,7 @@ env:
   ECR_REPOSITORY: snapshare
   ECS_CLUSTER: dev-SnapShare
   ECS_SERVICE: snapshare-service
-  CONTAINER_NAME: snapshare-app
+  CONTAINER_NAME: snapshare-image
   DEPLOYMENT_GROUP: snapshare-deployment-group
   APPLICATION_NAME: snapshare-application
 
