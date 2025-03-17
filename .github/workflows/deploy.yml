@@ -16,7 +16,7 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
-          java-version: '21'
+          java-version: '17'
           distribution: 'temurin'
           cache: maven
 
@@ -67,14 +67,14 @@ jobs:
         id: task-def
         run: |
           # Get current task definition
-          aws ecs describe-task-definition --task-definition tag-finder-task --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition snapshare-task --query taskDefinition > task-definition.json
           
           # Update container image in task definition to use latest tag
-          jq '.containerDefinitions[0].image = "public.ecr.aws/h2l8y6e3/cars:latest"' task-definition.json > new-task-definition.json
+          jq '.containerDefinitions[0].image = "626635425934.dkr.ecr.us-west-2.amazonaws.com/snapshare:latest"' task-definition.json > new-task-definition.json
           
           # Register new task definition version
           NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
-            --family tag-finder-task \
+            --family snapshare-task \
             --requires-compatibilities FARGATE \
             --network-mode awsvpc \
             --cpu 2048 \
@@ -97,7 +97,7 @@ jobs:
                 Properties:
                   TaskDefinition: "${TASK_DEF_ARN}"
                   LoadBalancerInfo:
-                    ContainerName: "tag-finder-container"
+                    ContainerName: "snapshare-container"
                     ContainerPort: 8080
                   PlatformVersion: "LATEST"
           EOF
@@ -111,8 +111,8 @@ jobs:
       - name: Start CodeDeploy Deployment
         run: |
           DEPLOYMENT_ID=$(aws deploy create-deployment \
-            --application-name tag-finder-application \
-            --deployment-group-name tag-finder-deployment-group \
+            --application-name snapshare-application \
+            --deployment-group-name snapshare-deployment-group \
             --revision revisionType=AppSpecContent,appSpecContent="{content='$(cat appspec.yaml)'}" \
             --description "Automated deployment via GitHub Actions" \
             --query 'deploymentId' \
