@@ -51,7 +51,6 @@ public class ImageController {
         return ResponseEntity.ok("Application is up and  running");
     }
 
-    // API endpoint for fetching images (for AJAX refreshing)
     @GetMapping("/api/images")
     @ResponseBody
     public ResponseEntity<List<Image>> getImages(@RequestParam(value = "page", defaultValue = "1") int page) {
