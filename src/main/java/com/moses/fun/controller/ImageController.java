@@ -48,7 +48,7 @@ public class ImageController {
     @GetMapping("/health")
     @ResponseBody
     public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Application is running");
+        return ResponseEntity.ok("Application is up and  running");
     }
 
     // API endpoint for fetching images (for AJAX refreshing)
