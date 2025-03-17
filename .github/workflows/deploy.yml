@@ -39,7 +39,7 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
-          ECR_REGISTRY: 626635425934.dkr.ecr.us-west-2.amazonaws.com/snapshare
+          ECR_REGISTRY: 626635425934.dkr.ecr.us-west-2.amazonaws.com
           ECR_REPOSITORY: snapshare
           IMAGE_TAG: ${{ github.sha }}
         run: |
