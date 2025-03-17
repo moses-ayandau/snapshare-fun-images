@@ -1,163 +1,127 @@
-name: SnapShare Blue-Green CI/CD Pipeline
-
+name: CI/CD Pipeline
 on:
   push:
-    branches: [ main ]
+    branches: main
   pull_request:
-    branches: [ main ]
-
-env:
-  AWS_REGION: us-west-2
-  ECR_REPOSITORY: snapshare
-  ECS_CLUSTER: dev-SnapShare-test
-  ECS_SERVICE: snapshare-service
-  CONTAINER_NAME: snapshare-image
-  DEPLOYMENT_GROUP: snapshare-group-name
-  APPLICATION_NAME: snapshare-application
-
+    branches: main
 jobs:
-  build-and-deploy:
-    name: Build, Push to ECR, and Deploy
+  build-and-push:
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-west-2
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build application
-        run: mvn clean package -DskipTests
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: private
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY: 626635425934.dkr.ecr.us-west-2.amazonaws.com/snapshare
+          ECR_REPOSITORY: cars
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker build -t "$IMAGE_URI" .
-          docker push "$IMAGE_URI"
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Download current task definition
-        run: |
-          aws ecs describe-task-definition --task-definition snapshare-task \
-          --query taskDefinition > task-definition.json
+  deploy:
+    name: Deploy with Blue-Green strategy
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
-      - name: Fill in the new image ID in the ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ env.IMAGE_URI }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Debug updated task definition
-        run: cat ${{ steps.task-def.outputs.task-definition }}
-
-      - name: Create AppSpec file for CodeDeploy
+      - name: Register new task definition
+        id: task-def
         run: |
-          TASK_DEF_PATH="${{ steps.task-def.outputs.task-definition }}"
-          cat > appspec.yaml << EOL
-          ---
+          # Get current task definition
+          aws ecs describe-task-definition --task-definition tag-finder-task --query taskDefinition > task-definition.json
+          
+          # Update container image in task definition to use latest tag
+          jq '.containerDefinitions[0].image = "public.ecr.aws/h2l8y6e3/cars:latest"' task-definition.json > new-task-definition.json
+          
+          # Register new task definition version
+          NEW_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --family tag-finder-task \
+            --requires-compatibilities FARGATE \
+            --network-mode awsvpc \
+            --cpu 2048 \
+            --memory 4096 \
+            --execution-role-arn $(jq -r '.executionRoleArn' task-definition.json) \
+            --task-role-arn $(jq -r '.taskRoleArn' task-definition.json) \
+            --container-definitions "$(jq '.containerDefinitions' new-task-definition.json)" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          echo "task_definition_arn=$NEW_TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
+      - name: Create AppSpec file
+        run: |
+          cat > appspec.yaml << 'EOF'
           version: 0.0
           Resources:
             - TargetService:
                 Type: AWS::ECS::Service
                 Properties:
-                  TaskDefinition: ${TASK_DEF_PATH}
+                  TaskDefinition: "${TASK_DEF_ARN}"
                   LoadBalancerInfo:
-                    ContainerName: ${{ env.CONTAINER_NAME }}
-                    ContainerPort: 80
+                    ContainerName: "tag-finder-container"
+                    ContainerPort: 8080
                   PlatformVersion: "LATEST"
-          EOL
-
-      - name: Skip YAML validation
-        run: |
-          echo "Skipping yamllint validation to avoid style issues"
+          EOF
+          
+          # Replace placeholder with actual task definition ARN
+          sed -i "s|\${TASK_DEF_ARN}|${{ steps.task-def.outputs.task_definition_arn }}|g" appspec.yaml
+          
+          # Print AppSpec for debugging
           cat appspec.yaml
 
-      - name: Deploy with CodeDeploy
-        id: deploy
+      - name: Start CodeDeploy Deployment
         run: |
-          set -e
-          # Check if the application exists first
-          if ! aws deploy get-application --application-name ${{ env.APPLICATION_NAME }} &>/dev/null; then
-            echo "CodeDeploy application ${{ env.APPLICATION_NAME }} does not exist."
-            echo "Please create the application and deployment group before running this workflow."
-            exit 1
-          fi
-
           DEPLOYMENT_ID=$(aws deploy create-deployment \
-            --application-name ${{ env.APPLICATION_NAME }} \
-            --deployment-group-name ${{ env.DEPLOYMENT_GROUP }} \
-            --revision revisionType=AppSpecContent,appSpecContent="{content='$(cat appspec.yaml | base64 -w 0)'}" \
-            --description "Deployment via GitHub Actions" \
-            --output json | jq -r '.deploymentId')
-
+            --application-name tag-finder-application \
+            --deployment-group-name tag-finder-deployment-group \
+            --revision revisionType=AppSpecContent,appSpecContent="{content='$(cat appspec.yaml)'}" \
+            --description "Automated deployment via GitHub Actions" \
+            --query 'deploymentId' \
+            --output text)
+          
+          echo "Started deployment: $DEPLOYMENT_ID"
+          
+          # Monitor deployment - don't wait for completion to avoid GitHub Action timeouts
+          aws deploy get-deployment --deployment-id $DEPLOYMENT_ID
+          
           echo "Deployment ID: $DEPLOYMENT_ID"
-          echo "deployment_id=$DEPLOYMENT_ID" >> $GITHUB_ENV
-
-          # Wait for deployment to complete and check status
-          aws deploy wait deployment-successful --deployment-id $DEPLOYMENT_ID
-
-      - name: Check ECS service status
-        run: |
-          aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} \
-          --query 'services[0].deployments' --output json
-
-      - name: Rollback on Failure
-        if: failure()
-        run: |
-          if [ -n "${{ env.deployment_id }}" ]; then
-            set -e
-            DEPLOYMENT_ID="${{ env.deployment_id }}"
-            STATUS=$(aws deploy get-deployment --deployment-id $DEPLOYMENT_ID | jq -r '.deploymentInfo.status')
-            if [ "$STATUS" != "Succeeded" ]; then
-              echo "Deployment failed! Initiating rollback..."
-              aws deploy rollback-deployment --deployment-id $DEPLOYMENT_ID
-            fi
-          else
-            echo "No deployment ID found, skipping rollback"
-          fi
-
-  update-ecs-config:
-    name: Update ECS Configuration
-    runs-on: ubuntu-latest
-    needs: build-and-deploy
-    if: github.event_name == 'push'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Update Blue-Green Deployment Configuration
-        run: |
-          aws cloudformation deploy \
-            --template-file infrastructure/blue-green.yml \
-            --stack-name snapshare-blue-green \
-            --capabilities CAPABILITY_IAM \
-            --parameter-overrides \
-              ServiceName=${{ env.ECS_SERVICE }} \
-              ContainerName=${{ env.CONTAINER_NAME }} \
-              ContainerPort=80 \
-              EcsClusterName=${{ env.ECS_CLUSTER }} \
-              ApplicationName=${{ env.APPLICATION_NAME }} \
-              DeploymentGroupName=${{ env.DEPLOYMENT_GROUP }}
+          echo "Monitor the deployment progress in AWS CodeDeploy console"
