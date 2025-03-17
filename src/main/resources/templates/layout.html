@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$CONTENT_TITLE - $LAYOUT_TITLE">SnapShare</title>
+
+    <!-- Import Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <style>
+        /* Global Styles */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #ff6b6b;
+            --text-color: #1e293b;
+            --light-text: #64748b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-top: 70px;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--primary-color);
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--primary-dark);
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-brand span {
+            color: var(--secondary-color);
+        }
+
+        .navbar-brand i {
+            margin-right: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-links a.upload-btn {
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links a.upload-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50%;
+            height: 3px;
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        /* Image Grid */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Image Card */
+        .image-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .image-thumbnail {
+            width: 100%;
+            height: 230px;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .image-card:hover .image-thumbnail {
+            transform: scale(1.05);
+        }
+
+        .thumbnail-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 230px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7));
+            opacity: 0;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-card:hover .thumbnail-overlay {
+            opacity: 1;
+        }
+
+        .overlay-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .overlay-actions button {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .overlay-actions button:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .card-content {
+            padding: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .card-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Upload Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            visibility: hidden;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal-dialog {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-30px);
+            transition: var(--transition);
+        }
+
+        .modal.active .modal-dialog {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h5 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-header .btn-close {
+            background-color: var(--bg-color);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-header .btn-close:hover {
+            background-color: var(--border-color);
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-color);
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .form-text {
+            font-size: 0.85rem;
+            color: var(--light-text);
+            margin-top: 0.5rem;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-color);
+            transition: var(--transition);
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary-color);
+        }
+
+        .file-upload-icon {
+            font-size: 2.5rem;
+            color: var(--light-text);
+            margin-bottom: 1rem;
+        }
+
+        .file-upload-text {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            color: var(--light-text);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-text {
+            color: var(--light-text);
+            max-width: 500px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .empty-state-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .empty-state-action:hover {
+            background-color: var(--primary-dark);
+            text-decoration: none;
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-nav a {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .footer-nav a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        <!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$CONTENT_TITLE - $LAYOUT_TITLE">SnapShare</title>
+
+    <!-- Import Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <style>
+        /* Global Styles */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary-color: #ff6b6b;
+            --text-color: #1e293b;
+            --light-text: #64748b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-top: 70px;
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--primary-color);
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--primary-dark);
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-brand span {
+            color: var(--secondary-color);
+        }
+
+        .navbar-brand i {
+            margin-right: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-links a.upload-btn {
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links a.upload-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-title {
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50%;
+            height: 3px;
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        /* Image Grid */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Image Card */
+        .image-card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .image-thumbnail {
+            width: 100%;
+            height: 230px;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .image-card:hover .image-thumbnail {
+            transform: scale(1.05);
+        }
+
+        .thumbnail-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 230px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7));
+            opacity: 0;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-card:hover .thumbnail-overlay {
+            opacity: 1;
+        }
+
+        .overlay-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .overlay-actions button {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .overlay-actions button:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .card-content {
+            padding: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-color);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .card-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--light-text);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Upload Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            visibility: hidden;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal-dialog {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-30px);
+            transition: var(--transition);
+        }
+
+        .modal.active .modal-dialog {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h5 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .modal-header .btn-close {
+            background-color: var(--bg-color);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-header .btn-close:hover {
+            background-color: var(--border-color);
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-color);
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .form-text {
+            font-size: 0.85rem;
+            color: var(--light-text);
+            margin-top: 0.5rem;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-color);
+            transition: var(--transition);
+        }
+
+        .file-upload-wrapper:hover {
+            border-color: var(--primary-color);
+        }
+
+        .file-upload-icon {
+            font-size: 2.5rem;
+            color: var(--light-text);
+            margin-bottom: 1rem;
+        }
+
+        .file-upload-text {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 0;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            color: var(--light-text);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-text {
+            color: var(--light-text);
+            max-width: 500px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .empty-state-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .empty-state-action:hover {
+            background-color: var(--primary-dark);
+            text-decoration: none;
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-nav a {
+            color: var(--text-color);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .footer-nav a:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+/* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1002;
+        }
+
+        .toast {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 300px;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .toast-message {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+
+        .toast-success .toast-icon {
+            color: #22c55e;
+        }
+
+        .toast-error .toast-icon {
+            color: #ef4444;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .image-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+
+            .navbar {
+                padding: 0.75rem 1rem;
+            }
+
+            .modal-dialog {
+                max-width: 90%;
+                padding: 1.5rem;
+            }
+
+            .toast {
+                min-width: 250px;
+            }
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            margin-left: 1rem;
+        }
+
+        .theme-toggle-label {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .theme-toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            border-radius: 34px;
+        }
+
+        .theme-toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3px;
+            background-color: var(--primary-color);
+            transition: var(--transition);
+            border-radius: 50%;
+        }
+
+        .theme-toggle-input:checked + .theme-toggle-slider {
+            background-color: #1e293b;
+        }
+
+        .theme-toggle-input:checked + .theme-toggle-slider:before {
+            transform: translateX(24px);
+            background-color: #f8fafc;
+        }
+
+        /* Loading animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Image Preview */
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 1rem auto;
+            display: block;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Progress bar */
+        .progress {
+            height: 8px;
+            background-color: var(--bg-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Bar -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <i class="fas fa-camera"></i>
+        Snap<span>Share</span>
+    </div>
+    <div class="nav-links">
+        <a href="/"><i class="fas fa-home"></i> Home</a>
+        <a href="/"><i class="fas fa-compass"></i> Explore</a>
+        <a href="#" data-modal-target="#uploadModal" class="upload-btn">
+            <i class="fas fa-cloud-upload-alt"></i> Upload
+        </a>
+        <div class="theme-toggle">
+            <label class="theme-toggle-label">
+                <input type="checkbox" class="theme-toggle-input">
+                <span class="theme-toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container">
+    <div layout:fragment="content">
+        <h2 class="section-title">Recent Uploads</h2>
+
+        <div class="image-grid">
+            <!-- Example Cards - These would be dynamically generated -->
+            <div class="image-card">
+                <img src="/api/placeholder/400/320" alt="Nature landscape" class="image-thumbnail">
+                <div class="thumbnail-overlay">
+                    <div class="overlay-actions">
+                        <button title="View Full Size"><i class="fas fa-eye"></i></button>
+                        <button title="Download"><i class="fas fa-download"></i></button>
+                        <button title="Add to Favorites"><i class="fas fa-heart"></i></button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Mountain Sunrise</h3>
+                    <p>Beautiful sunrise captured in the mountains.</p>
+                </div>
+                <div class="card-footer">
+                    <div class="user-info">
+                        <img src="/api/placeholder/40/40" alt="User avatar" class="user-avatar">
+                        <span class="user-name">Alex Johnson</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat"><i class="fas fa-eye"></i> 245</div>
+                        <div class="stat"><i class="fas fa-heart"></i> 42</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="image-card">
+                <img src="/api/placeholder/400/320" alt="City skyline" class="image-thumbnail">
+                <div class="thumbnail-overlay">
+                    <div class="overlay-actions">
+                        <button title="View Full Size"><i class="fas fa-eye"></i></button>
+                        <button title="Download"><i class="fas fa-download"></i></button>
+                        <button title="Add to Favorites"><i class="fas fa-heart"></i></button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Urban Nightscape</h3>
+                    <p>City lights reflecting on the water at night.</p>
+                </div>
+                <div class="card-footer">
+                    <div class="user-info">
+                        <img src="/api/placeholder/40/40" alt="User avatar" class="user-avatar">
+                        <span class="user-name">Sam Taylor</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat"><i class="fas fa-eye"></i> 189</div>
+                        <div class="stat"><i class="fas fa-heart"></i> 34</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="image-card">
+                <img src="/api/placeholder/400/320" alt="Wildlife" class="image-thumbnail">
+                <div class="thumbnail-overlay">
+                    <div class="overlay-actions">
+                        <button title="View Full Size"><i class="fas fa-eye"></i></button>
+                        <button title="Download"><i class="fas fa-download"></i></button>
+                        <button title="Add to Favorites"><i class="fas fa-heart"></i></button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">Wildlife in Motion</h3>
+                    <p>A beautiful deer caught mid-jump in the forest.</p>
+                </div>
+                <div class="card-footer">
+                    <div class="user-info">
+                        <img src="/api/placeholder/40/40" alt="User avatar" class="user-avatar">
+                        <span class="user-name">Jamie Price</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat"><i class="fas fa-eye"></i> 312</div>
+                        <div class="stat"><i class="fas fa-heart"></i> 58</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal" id="uploadModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h5><i class="fas fa-cloud-upload-alt"></i> Upload a New Image</h5>
+            <button class="btn-close" data-modal-close>&times;</button>
+        </div>
+        <form method="post" action="/upload" enctype="multipart/form-data" id="uploadForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="title" class="form-label">Image Title</label>
+                    <input type="text" id="title" name="title" class="form-control" placeholder="Enter a title for your image" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea id="description" name="description" class="form-control" rows="3" placeholder="Add a short description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <div class="file-upload-wrapper" id="dropArea">
+                        <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
+                        <p class="file-upload-text">Drop your image here or click to browse</p>
+                        <p class="form-text">Supported formats: JPG, PNG, GIF (Max: 10MB)</p>
+                        <input type="file" id="file" name="file" accept="image/*" required class="file-upload-input">
+                    </div>
+                    <img id="imagePreview" class="image-preview" style="display: none;">
+                    <div class="progress" style="display: none;">
+                        <div class="progress-bar" id="uploadProgress"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+                <button type="submit" class="btn btn-primary" id="uploadButton">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Empty State Template -->
+<template id="emptyStateTemplate">
+    <div class="empty-state">
+        <i class="fas fa-images empty-state-icon"></i>
+        <h2 class="empty-state-title">No Images Yet</h2>
+        <p class="empty-state-text">Be the first to share your amazing photos with the world!</p>
+        <a href="#" class="empty-state-action" data-modal-target="#uploadModal">
+            <i class="fas fa-cloud-upload-alt"></i> Upload Your First Image
+        </a>
+    </div>
+</template>
+
+<!-- Toast Notification Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Footer -->
+<footer>
+    <div class="footer-content">
+        <div class="footer-nav">
+            <a href="/about">About</a>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/contact">Contact Us</a>
+        </div>
+        <p class="footer-text">© 2025 SnapShare - Social Image Sharing</p>
+    </div>
+</footer>
+
+<!-- JavaScript for Modal, File Upload, and UI Interactions -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Modal functionality
+        const modal = document.getElementById('uploadModal');
+        const openModalButtons = document.querySelectorAll('[data-modal-target]');
+        const closeModalButtons = document.querySelectorAll('[data-modal-close]');
+
+        // Open Modal
+        openModalButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetModal = document.querySelector(button.dataset.modalTarget);
+                if (targetModal) {
+                    targetModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        });
+
+        // Close Modal
+        closeModalButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modal = button.closest('.modal');
+                closeModal(modal);
+            });
+        });
+
+        // Close Modal on Outside Click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal(modal);
+            }
+        });
+
+        function closeModal(modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            resetUploadForm();
+        }
+
+        // File Upload Preview
+        const fileInput = document.getElementById('file');
+        const imagePreview = document.getElementById('imagePreview');
+        const dropArea = document.getElementById('dropArea');
+        const progressBar = document.querySelector('.progress');
+        const progressBarFill = document.getElementById('uploadProgress');
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.style.borderColor = 'var(--primary-color)';
+            dropArea.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+        }
+
+       function unhighlight() {
+    dropArea.style.borderColor = 'var(--border-color)';
+    dropArea.style.backgroundColor = 'var(--bg-color)';
+}
+
+dropArea.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    fileInput.files = files;
+    handleFileSelect();
+}
+
+function handleFileSelect() {
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
+            dropArea.style.display = 'none';
+        };
+
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+}
+
+// Form submission with progress simulation
+const uploadForm = document.getElementById('uploadForm');
+const uploadButton = document.getElementById('uploadButton');
+
+uploadForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // Validate the form
+    if (!validateForm()) {
+        showToast('Error', 'Please fill in all required fields', 'error');
+        return;
+    }
+
+    // Show progress bar
+    progressBar.style.display = 'block';
+    uploadButton.disabled = true;
+    uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+    // Simulate upload progress
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 5;
+        progressBarFill.style.width = progress + '%';
+
+        if (progress >= 100) {
+            clearInterval(interval);
+
+            // Simulate completion
+            setTimeout(() => {
+                showToast('Success', 'Your image has been uploaded!', 'success');
+                closeModal(modal);
+
+                // In a real application, you would handle the form submission here
+                // and redirect the user or update the UI accordingly
+            }, 500);
+        }
+    }, 150);
+});
+
+function validateForm() {
+    const title = document.getElementById('title').value;
+    const file = fileInput.files[0];
+
+    return title && file;
+}
+
+function resetUploadForm() {
+    uploadForm.reset();
+    imagePreview.style.display = 'none';
+    dropArea.style.display = 'flex';
+    progressBar.style.display = 'none';
+    progressBarFill.style.width = '0%';
+    uploadButton.disabled = false;
+    uploadButton.innerHTML = '<i class="fas fa-upload"></i> Upload';
+}
+
+// Toast notifications
+function showToast(title, message, type = 'success') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    toast.innerHTML = `
+        <div class="toast-icon">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    // Force reflow to trigger transition
+    toast.offsetHeight;
+
+    // Show the toast
+    toast.classList.add('show');
+
+    // Remove the toast after 5 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toastContainer.removeChild(toast);
+        }, 500);
+    }, 5000);
+}
+
+// Dark mode toggle
+const themeToggle = document.querySelector('.theme-toggle-input');
+const root = document.documentElement;
+
+themeToggle.addEventListener('change', function() {
+    if (this.checked) {
+        enableDarkMode();
+    } else {
+        disableDarkMode();
+    }
+});
+
+// Check user preference
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    themeToggle.checked = true;
+    enableDarkMode();
+}
+
+function enableDarkMode() {
+    root.style.setProperty('--bg-color', '#0f172a');
+    root.style.setProperty('--card-bg', '#1e293b');
+    root.style.setProperty('--text-color', '#f8fafc');
+    root.style.setProperty('--light-text', '#94a3b8');
+    root.style.setProperty('--border-color', '#334155');
+    localStorage.setItem('theme', 'dark');
+}
+
+function disableDarkMode() {
+    root.style.setProperty('--bg-color', '#f8fafc');
+    root.style.setProperty('--card-bg', '#ffffff');
+    root.style.setProperty('--text-color', '#1e293b');
+    root.style.setProperty('--light-text', '#64748b');
+    root.style.setProperty('--border-color', '#e2e8f0');
+    localStorage.setItem('theme', 'light');
+}
+
+// Remember user preference
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+    themeToggle.checked = true;
+    enableDarkMode();
+}
+
+// Display empty state if no images
+const imageGrid = document.querySelector('.image-grid');
+if (imageGrid && imageGrid.children.length === 0) {
+    const emptyStateTemplate = document.getElementById('emptyStateTemplate');
+    const emptyState = emptyStateTemplate.content.cloneNode(true);
+    imageGrid.appendChild(emptyState);
+}
+
+// Image card hover effects
+const imageCards = document.querySelectorAll('.image-card');
+imageCards.forEach(card => {
+    const overlay = card.querySelector('.thumbnail-overlay');
+    card.addEventListener('mouseover', () => {
+        overlay.style.opacity = '1';
+    });
+    card.addEventListener('mouseout', () => {
+        overlay.style.opacity = '0';
+    });
+});
+
+// Lazy loading images
+if ('IntersectionObserver' in window) {
+    const lazyImages = document.querySelectorAll('.image-thumbnail');
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.classList.remove('lazy');
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+
+    lazyImages.forEach(img => {
+        imageObserver.observe(img);
+    });
+}
+</script>
+
+<!-- Custom JavaScript -->
+<th:block layout:fragment="scripts"></th:block>
+</body>
+</html>
