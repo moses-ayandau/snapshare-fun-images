@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -21,7 +23,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class S3Service {
 
@@ -29,10 +30,11 @@ public class S3Service {
 
     private static final String BUCKET_NAME = "fun-social-images-s3-bucket-1";
 
+
     public S3Service() {
         s3Client = S3Client.builder()
                 .region(Region.US_WEST_2)
-                .credentialsProvider(DefaultCredentialsProvider.create()) // Use the default credentials provider
+                .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
     }
 
