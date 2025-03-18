@@ -17,7 +17,7 @@ import java.util.List;
 public class ImageController {
 
     private final S3Service s3Service;
-    private static final int PAGE_SIZE = 4;
+    private static final int PAGE_SIZE = 12;
 
     @GetMapping
     public String index(@RequestParam(value = "page", defaultValue = "1") int page, Model model) {
