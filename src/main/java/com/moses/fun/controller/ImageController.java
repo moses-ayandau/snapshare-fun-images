@@ -48,7 +48,7 @@ public class ImageController {
     @GetMapping("/health")
     @ResponseBody
     public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Application is up and  running");
+        return ResponseEntity.ok("Application is up and  running on port 8080");
     }
 
     @GetMapping("/api/images")
