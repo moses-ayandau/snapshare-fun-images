@@ -16,10 +16,7 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +39,8 @@ public class S3Service {
         try {
             // Get all objects first (this could be optimized for very large buckets)
             List<S3Object> allObjects = listAllObjects();
+            allObjects.sort(Comparator.comparing(S3Object::lastModified).reversed());
+
 
             // Calculate start and end indices for the requested page
             int startIndex = (page - 1) * size;
