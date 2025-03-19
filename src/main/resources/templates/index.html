@@ -202,11 +202,17 @@
 
     <nav th:if="${totalPages > 1}">
         <ul class="pagination">
-            <li><a th:href="@{/(page=${currentPage - 1})}" th:classappend="${currentPage == 1} ? 'disabled'">&laquo;</a></li>
-            <li th:each="i : ${#numbers.sequence(1, totalPages)}">
-                <a th:href="@{/(page=${i})}" th:classappend="${i == currentPage} ? 'active'" th:text="${i}">1</a>
+            <li th:class="${currentPage == 1} ? 'disabled' : ''">
+                <a th:if="${currentPage > 1}" th:href="@{/(page=${currentPage - 1})}">&laquo;</a>
+                <span th:if="${currentPage == 1}">&laquo;</span>
             </li>
-            <li><a th:href="@{/(page=${currentPage + 1})}" th:classappend="${currentPage == totalPages} ? 'disabled'">&raquo;</a></li>
+            <li th:each="i : ${#numbers.sequence(1, totalPages)}">
+                <a th:href="@{/(page=${i})}" th:classappend="${i == currentPage} ? 'active' : ''" th:text="${i}">1</a>
+            </li>
+            <li th:class="${currentPage == totalPages} ? 'disabled' : ''">
+                <a th:if="${currentPage < totalPages}" th:href="@{/(page=${currentPage + 1})}">&raquo;</a>
+                <span th:if="${currentPage == totalPages}">&raquo;</span>
+            </li>
         </ul>
     </nav>
 </div>
